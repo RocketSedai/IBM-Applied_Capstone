@@ -52,9 +52,14 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
                                     value=[min_payload, max_payload]
                                 ),
 
+                                html.Div(id='success-payload-stats', 
+                                    style={'fontSize': 16, 'color': '#503D36', 'marginTop': '10px'}),
+
                                 # TASK 4: Add a scatter chart to show the correlation between payload and launch success
                                 html.Div(dcc.Graph(id='success-payload-scatter-chart')),
                                 ])
+
+                                
 
 # TASK 2:
 # Add a callback function for `site-dropdown` as input, `success-pie-chart` as output
@@ -111,6 +116,25 @@ def update_scatter_chart(selected_site, payload_range):
         hover_data=['Launch Site']
     )
     return fig
+
+@app.callback(
+    Output(component_id='success-payload-stats', component_property='children'),
+    [Input(component_id='site-dropdown', component_property='value'),
+     Input(component_id='payload-slider', component_property='value')]
+)
+def update_payload_stats(selected_site, payload_range):
+    low, high = payload_range
+    
+    if selected_site == 'ALL':
+        df = spacex_df
+    else:
+        df = spacex_df[spacex_df['Launch Site'] == selected_site]
+    
+    df = df[(df['Payload Mass (kg)'] >= low) & (df['Payload Mass (kg)'] <= high)]
+    if df.empty:
+        return "No launches in this payload range."
+    success_rate = df['class'].mean() * 100
+    return f"Success rate for payload range {low}-{high} kg: {success_rate:.1f}%"
 
 # Run the app
 if __name__ == '__main__':
